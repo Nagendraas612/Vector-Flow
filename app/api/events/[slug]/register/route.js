@@ -9,10 +9,12 @@ import { buildRegistrationMail, sendMail } from "@/lib/mail";
 export async function POST(request, { params }) {
   const session = await getSession();
   if (!session) return fail("NOT_SIGNED_IN", 401);
-  // Risks review: rate limiting, 10/min/IP, checked after auth so a
+  // Risks review: rate limiting, 50/min/IP (raised from 10: a whole
+  // campus shares one outbound IP, and a crowd registering at an
+  // event opening would trip 10/min), checked after auth so a
   // signed-out caller gets 401, not 429. fail() cannot set headers,
   // so the 429 is built here with the Retry-After header.
-  const limit = checkRateLimit(request, "register", 10, 60);
+  const limit = checkRateLimit(request, "register", 50, 60);
   if (!limit.allowed) {
     return NextResponse.json(
       { ok: false, error: "RATE_LIMITED" },

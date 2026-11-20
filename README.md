@@ -386,10 +386,10 @@ production; only the Ready deployment on the production URL does.
 
 ## PWA icon note
 
-The icons in `public/icons/` are simple placeholders, dark blue
-squares with the letters VF. They are not the real club logo.
-Replace them with the real club logo, in 192 and 512 sizes, plus a
-maskable 512 size, before launch, if the club has a real logo.
+The icons in `public/icons/` are the real club logo (mark only, no
+text), generated from the transparent PNG the club supplied: 192 and
+512 on transparent backgrounds, plus a maskable 512 on white. The
+browser tab icon is `app/icon.png`, same mark.
 
 ## Common problems and fixes
 
