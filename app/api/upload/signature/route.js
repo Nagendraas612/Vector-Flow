@@ -7,10 +7,13 @@ import { checkRateLimit } from "@/lib/rateLimit";
 export async function POST(request) {
   const session = await getSession();
   if (!session) return fail("NOT_SIGNED_IN", 401);
-  // Risks review: rate limiting, 30/min/IP, checked after auth so a
-  // signed-out caller gets 401, not 429. fail() cannot set headers,
-  // so the 429 is built here with the Retry-After header.
-  const limit = checkRateLimit(request, "upload-signature", 30, 60);
+  // Risks review: rate limiting, 50/min/IP (raised from 30 to match
+  // registration: a paid registration needs a signature first, so a
+  // lower signature cap would silently cap paid registrations),
+  // checked after auth so a signed-out caller gets 401, not 429.
+  // fail() cannot set headers, so the 429 is built here with the
+  // Retry-After header.
+  const limit = checkRateLimit(request, "upload-signature", 50, 60);
   if (!limit.allowed) {
     return NextResponse.json(
       { ok: false, error: "RATE_LIMITED" },

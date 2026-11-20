@@ -388,12 +388,9 @@ th {
 .brand-logo {
   display: block;
   object-fit: contain;
-  /* P0 (M1) stop-gap: public/vector-flow-logo.jpeg is a JPEG, so it
-     cannot be transparent and its black corners show on every page.
-     Clip the logo to a white circle until the club supplies a
-     transparent PNG logo. A real logo file is still owed. */
-  border-radius: 50%;
-  background: #fff;
+  /* The logo is a transparent PNG (mark only), so it needs no
+     circular clip and no white backing. The old JPEG had a black
+     square baked in, which the clip could not remove. */
 }
 
 .site-brand__logo {
