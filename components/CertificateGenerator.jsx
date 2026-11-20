@@ -6,6 +6,7 @@ import FileUpload from "@/components/FileUpload";
 import { CERT_FONTS, DEFAULT_CERT_BOX, DEFAULT_CERT_SIZE, certFontById, safeFilename, tidyName } from "@/lib/certNames";
 import { generateCertificatePdf, checkPrintedName, pageSizeForAspect, templateTypeFromUrl } from "@/lib/certPdf";
 import { uploadFileToCloudinary } from "@/lib/signedUpload";
+import { IconClose } from "@/components/icons";
 
 // Certificate generator. On the certificates page, an admin can
 // turn a template image into one PDF per Present student, review
@@ -711,7 +712,7 @@ function ReviewRow({ row, templateUrl, box, pageWidth, fontId, onNameChange, onN
         {row.saveStatus === "saved" && <p>Saved. It is unticked in the table below.</p>}
         {row.saveStatus === "saving" && <p>Saving...</p>}
         <button type="button" onClick={onRemove} disabled={row.saveStatus === "saved"}>
-          {row.removed ? "Add back to batch" : "Remove from batch ✕"}
+          {row.removed ? "Add back to batch" : (<>Remove from batch <IconClose /></>)}
         </button>
       </div>
     </div>

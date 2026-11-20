@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import BrandLogo from "@/components/BrandLogo";
+import { IconArrowRight } from "@/components/icons";
 
 function SignInContent() {
   const router = useRouter();
@@ -38,7 +39,7 @@ function SignInContent() {
       <p className="signin-page__description">Use your college account to register for events and follow your participation.</p>
       {message && <p className="error">{message}</p>}
       <Link className="signin-page__button" href="/api/auth/login">
-        Continue with Google <span aria-hidden="true">→</span>
+        Continue with Google <IconArrowRight />
       </Link>
       <p className="signin-page__note">Only @vvce.ac.in accounts can sign in.</p>
     </div>

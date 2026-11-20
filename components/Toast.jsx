@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { IconClose } from "@/components/icons";
 
 // One shared toast for the whole site. A small message appears at
 // the top, centred, disappears by itself after ~3.5 seconds, and
@@ -57,7 +58,7 @@ export default function Toast({ toast, onClose }) {
     <div className={`toast toast--${toast.type || "info"}`} role="status">
       <span>{toast.message}</span>
       <button type="button" className="toast__close" onClick={onClose} aria-label="Dismiss message">
-        <span aria-hidden="true">✕</span>
+        <IconClose />
       </button>
     </div>
   );
