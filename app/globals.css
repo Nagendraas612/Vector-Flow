@@ -37,6 +37,10 @@ html {
 
 body {
   min-height: 100vh;
+  /* The 100vh above is the fallback; 100dvh follows the real
+     visible height on phones, where the browser bar slides away
+     and 100vh leaves a gap below the footer. */
+  min-height: 100dvh;
   margin: 0;
   /* m31: the old 320px min-width on html is gone, and sideways
      scroll is clipped here instead, so nothing narrower than 320px
@@ -425,6 +429,10 @@ th {
   display: none;
 }
 
+.site-drawer__footer {
+  display: none;
+}
+
 .site-nav {
   display: flex;
   align-items: center;
@@ -477,13 +485,147 @@ th {
   border-left: 1px solid var(--color-border);
 }
 
-.site-nav__user {
+/* Inline SVG icons (components/icons.jsx): sized by the surrounding
+   font size, coloured by currentColor. The vertical-align keeps an
+   icon sitting on the text baseline where it is used inline. */
+.ui-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  flex: none;
+}
+
+/* Signed-in account: avatar button + dropdown menu on desktop. The
+   drawer variant is hidden here and shown in the mobile block. */
+.site-account--drawer {
+  display: none;
+}
+
+.site-account--desktop {
+  position: relative;
+}
+
+.site-account__button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-navy-900);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.site-account__button:hover {
+  border-color: var(--color-border);
+  background: #f4f2fb;
+}
+
+.site-account__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-navy-900), var(--color-blue-700));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.site-account__name {
   max-width: 150px;
   overflow: hidden;
-  color: var(--color-muted);
   font-size: 13px;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.site-account__chevron {
+  color: var(--color-muted);
+  font-size: 16px;
+  transition: transform 160ms ease;
+}
+
+.site-account__button[aria-expanded="true"] .site-account__chevron {
+  transform: rotate(180deg);
+}
+
+.site-account__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 264px;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgb(15 23 42 / 16%);
+  z-index: 60;
+}
+
+.site-account__menu-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-account__menu-head .site-account__avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+
+.site-account__menu-identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.site-account__menu-identity strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.site-account__menu-identity span {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.site-account__signout {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-navy-900);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.site-account__signout:hover {
+  background: #f4f2fb;
 }
 
 .site-nav__signin {
@@ -518,12 +660,6 @@ th {
 
 .site-nav__signin:focus-visible {
   box-shadow: 0 0 0 3px rgb(82 56 183 / 30%);
-}
-
-.site-nav__signout {
-  min-height: 44px;
-  padding: 7px 12px;
-  font-size: 12px;
 }
 
 .site-menu-toggle {
@@ -883,24 +1019,27 @@ th {
     color: #ffffff;
   }
 
+  /* Drawer links sit right under the header; the account block
+     follows them and the drawer footer pins to the bottom. The old
+     flex: 1 here stretched the links and left a dead middle. */
   .site-nav__links {
     display: flex;
     flex-direction: column;
     gap: 6px;
     padding: 16px 14px;
-    flex: 1;
   }
 
   .site-nav__link {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     min-height: 44px;
     padding: 0 14px;
     border-radius: var(--radius-sm);
     color: #ded8ff;
     font-size: 14px;
     font-weight: 500;
+    text-align: left;
     text-decoration: none;
     transition: background-color 160ms ease, color 160ms ease;
   }
@@ -924,38 +1063,100 @@ th {
     display: inline-block;
     width: 7px;
     height: 7px;
+    margin-left: auto;
     border-radius: 50%;
     background: var(--color-teal-500);
   }
 
   .site-nav__account {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 12px;
     padding: 16px 18px;
-    margin-top: auto;
     border-top: 1px solid rgb(85 68 184 / 25%);
     border-left: 0;
     background: rgb(23 21 50 / 80%);
   }
 
-  .site-nav__user {
-    color: #ded8ff;
-    font-size: 13px;
-    font-weight: 600;
-    max-width: 140px;
+  /* Drawer account: the desktop dropdown is hidden here; the
+     account shows as a static block under the links. */
+  .site-account--desktop {
+    display: none;
   }
 
-  .site-nav__signout {
-    border-color: rgb(108 91 208 / 30%);
+  .site-account--drawer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .site-account__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .site-account__identity {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .site-account__identity strong {
+    overflow: hidden;
+    color: #fff;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .site-account__identity span {
+    overflow: hidden;
+    color: #b9b1e8;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .site-account--drawer .site-account__avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .site-account--drawer .site-account__signout {
+    justify-content: center;
+    margin-top: 0;
+    border: 1px solid rgb(108 91 208 / 30%);
     background: rgb(55 48 120 / 30%);
     color: #f1efff;
   }
 
-  .site-nav__signout:hover {
+  .site-account--drawer .site-account__signout:hover {
     background: var(--color-blue-700);
     color: #ffffff;
+  }
+
+  /* Drawer footer: club contact pinned to the bottom, so the
+     drawer ends on something useful instead of dead space. */
+  .site-drawer__footer {
+    display: block;
+    margin-top: auto;
+    padding: 16px 18px;
+    border-top: 1px solid rgb(85 68 184 / 25%);
+  }
+
+  .site-drawer__footer a {
+    color: #b9b1e8;
+    font-size: 13px;
+    text-decoration: none;
+  }
+
+  .site-drawer__footer a:hover {
+    color: #ffffff;
+    text-decoration: underline;
   }
 
   .site-nav__signin {
@@ -1462,6 +1663,11 @@ th {
   border-radius: 12px;
   background: var(--color-blue-100);
   color: var(--color-blue-700);
+}
+
+.home-empty-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .home-events-message--error {

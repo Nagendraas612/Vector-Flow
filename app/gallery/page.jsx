@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Skeleton from "@/components/Skeleton";
+import { IconArrowRight } from "@/components/icons";
 
 // Sprint 5 Gallery. Upcoming events first, then History. Each card
 // shows the event poster if there is one, the date and venue, and
@@ -57,7 +58,7 @@ export default function Gallery() {
           <p className="gallery-card__description">{event.description}</p>
           {event.driveLink ? (
             <a href={event.driveLink} target="_blank" rel="noreferrer">
-              View photos and files <span aria-hidden="true">→</span>
+              View photos and files <IconArrowRight />
             </a>
           ) : (
             <p className="gallery-card__unavailable">Photos and files are not linked yet for this event.</p>
