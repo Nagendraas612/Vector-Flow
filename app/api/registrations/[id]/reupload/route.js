@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { ok, fail } from "@/lib/json";
+import { isCloudinaryUrl } from "@/lib/upload";
 
 // POST, student owner only. This is the Sprint 3 re-upload path: after
 // a payment is rejected, the student can upload a new screenshot.
@@ -28,8 +29,12 @@ export async function POST(request, { params }) {
   }
   const body = await request.json().catch(() => ({}));
   const url = String(body.paymentScreenshotUrl || "");
-  if (!url.startsWith("http://") && !url.startsWith("https://")) return fail("INVALID_FILE", 400);
-  if (url.length > 2000) return fail("INVALID_FILE", 400);
+  // Risks review: screenshot URL pinned to Cloudinary, same as the
+  // register route. Any http(s) URL used to be accepted; the upload
+  // flow already returns a Cloudinary URL, so anything else is
+  // refused here instead of stored and never shown.
+  if (!isCloudinaryUrl(url)) return fail("INVALID_SCREENSHOT", 400);
+  if (url.length > 2000) return fail("INVALID_SCREENSHOT", 400);
   const updated = await prisma.registration.update({
     where: { id: registration.id },
     data: {
