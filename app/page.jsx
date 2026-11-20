@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import BrandLogo from "@/components/BrandLogo";
 import Skeleton from "@/components/Skeleton";
+import { IconArrowRight, IconArrowDown, IconSparkle } from "@/components/icons";
 
 function formatEventDate(value) {
   if (!value) return "Date to be announced";
@@ -73,14 +74,14 @@ export default function Home() {
           </p>
           <div className="home-hero__actions">
             <a className="home-button home-button--primary" href="#upcoming-events">
-              Explore events <span aria-hidden="true">↓</span>
+              Explore events <IconArrowDown />
             </a>
             <Link className="home-button home-button--secondary" href="/team">
-              Meet the team <span aria-hidden="true">→</span>
+              Meet the team <IconArrowRight />
             </Link>
           </div>
           <div className="home-hero__note">
-            <span aria-hidden="true">✦</span>
+            <IconSparkle />
             Learn together. Build boldly. Share what you know.
           </div>
         </div>
@@ -117,7 +118,7 @@ export default function Home() {
           </div>
         ) : events.length === 0 ? (
           <div className="home-events-message">
-            <span className="home-empty-icon" aria-hidden="true">✦</span>
+            <span className="home-empty-icon" aria-hidden="true"><IconSparkle /></span>
             <h3>Good things are in the works.</h3>
             <p>No upcoming events yet. Check back soon for what’s next.</p>
           </div>
@@ -158,7 +159,7 @@ export default function Home() {
                   </h3>
                   <p className="home-event-card__description">{event.description}</p>
                   <Link className="home-event-card__link" href={`/events/${event.slug}`}>
-                    Explore event <span aria-hidden="true">→</span>
+                    Explore event <IconArrowRight />
                   </Link>
                 </div>
               </article>
@@ -179,7 +180,7 @@ export default function Home() {
             excitement of turning ideas into real projects.
           </p>
           <Link className="home-text-link" href="/team">
-            Get to know our community <span aria-hidden="true">→</span>
+            Get to know our community <IconArrowRight />
           </Link>
         </div>
       </section>

@@ -6,6 +6,7 @@ import FileUpload from "@/components/FileUpload";
 import Skeleton from "@/components/Skeleton";
 import StatusBadge from "@/components/StatusBadge";
 import Toast, { useToast } from "@/components/Toast";
+import { IconArrowLeft, IconArrowRight, IconExternalLink, IconMapPin } from "@/components/icons";
 
 const HUMAN = {
   NOT_SIGNED_IN: "Please sign in first.",
@@ -131,7 +132,7 @@ export default function EventDetail({ params }) {
             <h1>This event could not be found.</h1>
           </>
         )}
-        <Link className="event-detail-back" href="/">← Back to Vector Flow</Link>
+        <Link className="event-detail-back" href="/"><IconArrowLeft /> Back to Vector Flow</Link>
       </div>
     );
   }
@@ -188,7 +189,7 @@ export default function EventDetail({ params }) {
   return (
     <article className="event-detail">
       <Link className="event-detail-back" href="/">
-        <span aria-hidden="true">←</span> All events
+        <IconArrowLeft /> All events
       </Link>
 
       <section className="event-detail-hero" aria-labelledby="event-title">
@@ -227,7 +228,7 @@ export default function EventDetail({ params }) {
               </span>
             </div>
             <div className="event-detail-fact">
-              <span className="event-detail-fact__icon" aria-hidden="true">⌖</span>
+              <span className="event-detail-fact__icon" aria-hidden="true"><IconMapPin /></span>
               <span>
                 <strong>{event.venue || (event.mode === "ONLINE" ? "Online event" : "Venue to be announced")}</strong>
                 <span>{event.mode === "ONLINE" ? "Online" : "On campus"}</span>
@@ -253,7 +254,7 @@ export default function EventDetail({ params }) {
               : user
                 ? "Register for this event"
                 : "Sign in to register"}
-            <span aria-hidden="true">→</span>
+            <IconArrowRight />
           </a>
         </div>
       </section>
@@ -327,11 +328,11 @@ export default function EventDetail({ params }) {
 
           {event.registrationMode === "EXTERNAL" ? (
             <a className="event-registration-submit" href={event.externalRegistrationUrl} target="_blank" rel="noreferrer">
-              Register on the external form <span aria-hidden="true">↗</span>
+              Register on the external form <IconExternalLink />
             </a>
           ) : !user ? (
             <Link className="event-registration-submit" href="/signin">
-              Sign in to register <span aria-hidden="true">→</span>
+              Sign in to register <IconArrowRight />
             </Link>
           ) : (
             <form className="event-registration-form" onSubmit={register}>
@@ -381,7 +382,7 @@ export default function EventDetail({ params }) {
               )}
 
               <button className="event-registration-submit" type="submit" disabled={submitting || registered}>
-                {submitting ? (<><span className="btn-spinner" aria-hidden="true" /> Registering...</>) : registered ? "Registered" : (<>Register for this event <span aria-hidden="true">→</span></>)}
+                {submitting ? (<><span className="btn-spinner" aria-hidden="true" /> Registering...</>) : registered ? "Registered" : (<>Register for this event <IconArrowRight /></>)}
               </button>
               <Toast toast={toast} onClose={hideToast} />
             </form>

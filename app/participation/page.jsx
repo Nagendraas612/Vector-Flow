@@ -5,6 +5,21 @@ import { useEffect, useState, useCallback } from "react";
 import FileUpload from "@/components/FileUpload";
 import Skeleton from "@/components/Skeleton";
 import Toast, { useToast } from "@/components/Toast";
+import {
+  IconGraduationCap,
+  IconScroll,
+  IconClipboardList,
+  IconCalendar,
+  IconMapPin,
+  IconCreditCard,
+  IconEye,
+  IconDownload,
+  IconClock,
+  IconCheck,
+  IconClose,
+  IconExternalLink,
+} from "@/components/icons";
+import { formatDisplayName } from "@/lib/names";
 
 function formatEventDate(value) {
   if (!value) return "Date to be announced";
@@ -282,7 +297,7 @@ export default function Participation() {
       {user && (
         <section className="participation-profile-card" aria-label="Student profile summary">
           <div className="participation-profile-card__info">
-            <h2>{user.name}</h2>
+            <h2>{formatDisplayName(user.name)}</h2>
             <p>{user.email}</p>
           </div>
           <div className="participation-profile-card__tags">
@@ -297,7 +312,7 @@ export default function Participation() {
       {/* Participation Metric Summary Stats */}
       <section className="participation-stats" aria-label="Participation summary statistics">
         <div className="participation-stat-card participation-stat-card--teal">
-          <div className="participation-stat-card__icon" aria-hidden="true">🎓</div>
+          <div className="participation-stat-card__icon" aria-hidden="true"><IconGraduationCap /></div>
           <div>
             <p className="participation-stat-card__value">{attendedRegistrations.length}</p>
             <p className="participation-stat-card__label">Attended Events</p>
@@ -305,7 +320,7 @@ export default function Participation() {
         </div>
 
         <div className="participation-stat-card participation-stat-card--purple">
-          <div className="participation-stat-card__icon" aria-hidden="true">📜</div>
+          <div className="participation-stat-card__icon" aria-hidden="true"><IconScroll /></div>
           <div>
             <p className="participation-stat-card__value">{sentCertificates.length}</p>
             <p className="participation-stat-card__label">E-Certificates Earned</p>
@@ -313,7 +328,7 @@ export default function Participation() {
         </div>
 
         <div className="participation-stat-card">
-          <div className="participation-stat-card__icon" aria-hidden="true">📋</div>
+          <div className="participation-stat-card__icon" aria-hidden="true"><IconClipboardList /></div>
           <div>
             <p className="participation-stat-card__value">{registrations.length}</p>
             <p className="participation-stat-card__label">Total Registrations</p>
@@ -382,13 +397,13 @@ export default function Participation() {
                             <Link href={`/events/${r.event.slug}`}>{r.event.title}</Link>
                           </h3>
                           <p className="attended-card__meta">
-                            <span>📅 {formatEventDate(r.event.startAt)}</span>
-                            {r.event.venue && <span>📍 {r.event.venue}</span>}
-                            <span>💳 {r.event.feeType === "PAID" ? `₹${r.event.feeAmount}` : "Free"}</span>
+                            <span><IconCalendar /> {formatEventDate(r.event.startAt)}</span>
+                            {r.event.venue && <span><IconMapPin /> {r.event.venue}</span>}
+                            <span><IconCreditCard /> {r.event.feeType === "PAID" ? `₹${r.event.feeAmount}` : "Free"}</span>
                           </p>
                         </div>
                         <span className="attended-badge">
-                          <span aria-hidden="true">✓</span> Attended
+                          <IconCheck /> Attended
                         </span>
                       </div>
 
@@ -396,7 +411,7 @@ export default function Participation() {
                       {r.certificate && r.certificate.status === "SENT" ? (
                         <div className="attended-card__certificate-box">
                           <div className="attended-card__certificate-info">
-                            <span className="attended-card__certificate-icon" aria-hidden="true">📜</span>
+                            <span className="attended-card__certificate-icon" aria-hidden="true"><IconScroll /></span>
                             <div>
                               <strong>E-Participation Certificate Ready</strong>
                               <span>
@@ -414,7 +429,7 @@ export default function Participation() {
                               disabled={viewerLoading}
                               title="View certificate preview"
                             >
-                              <span aria-hidden="true">👁️</span> View Certificate
+                              <IconEye /> View Certificate
                             </button>
                             <button
                               type="button"
@@ -423,13 +438,13 @@ export default function Participation() {
                               disabled={busyKey === `download:${r.id}`}
                               title="Download certificate PDF"
                             >
-                              <span aria-hidden="true">⬇</span> Download Certificate
+                              <IconDownload /> Download Certificate
                             </button>
                           </div>
                         </div>
                       ) : (
                         <div className="attended-card__certificate-pending">
-                          <span>⏳ Attendance marked Present · E-Certificate processing and will appear here once published.</span>
+                          <span><IconClock /> Attendance marked Present · E-Certificate processing and will appear here once published.</span>
                         </div>
                       )}
                     </article>
@@ -503,7 +518,7 @@ export default function Participation() {
                           onClick={() => viewCertificate(r)}
                           disabled={viewerLoading}
                         >
-                          <span aria-hidden="true">👁️</span> View Certificate
+                          <IconEye /> View Certificate
                         </button>
                         <button
                           type="button"
@@ -511,7 +526,7 @@ export default function Participation() {
                           onClick={() => downloadCertificate(r)}
                           disabled={busyKey === `download:${r.id}`}
                         >
-                          <span aria-hidden="true">⬇</span> Download Certificate
+                          <IconDownload /> Download Certificate
                         </button>
                       </div>
                     )}
@@ -548,7 +563,7 @@ export default function Participation() {
                 onClick={() => setViewingCert(null)}
                 aria-label="Close certificate viewer"
               >
-                <span aria-hidden="true">✕</span>
+                <IconClose />
               </button>
             </div>
 
@@ -579,7 +594,7 @@ export default function Participation() {
                     rel="noreferrer"
                     className="btn-cert-view"
                   >
-                    Open in New Tab ↗
+                    Open in New Tab <IconExternalLink />
                   </a>
                   <button
                     type="button"
