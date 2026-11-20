@@ -1,21 +1,35 @@
 import { prisma } from "@/lib/db";
 import { ok, fail } from "@/lib/json";
-import { buildCertificateMail, sendMail } from "@/lib/mail";
+import { buildCertificateMail, sendMail, toHtml } from "@/lib/mail";
 import { checkCronSecret } from "@/lib/cron";
 
 // GET, cron only, protected by CRON_SECRET. Sprint 4 replaces the
 // Sprint 2 empty stub with a real worker. Each call takes at most
-// 20 QUEUED certificate mails, oldest first, and sends them one by
-// one, in order. On success: the certificate becomes SENT, emailedAt
-// is set, and its mail row becomes SENT. On failure: the certificate
-// becomes FAILED with the error saved, its mail row becomes FAILED,
-// and the worker keeps going with the next mail. One failure never
-// blocks the rest of the batch. Mails that are already SENT or
-// FAILED are never retried by this route; use the admin Retry
-// button for a failed certificate, which queues it again.
+// 20 QUEUED mails, oldest first, and sends them one by one, in
+// order. Certificate mails and standalone mails share the batch:
+// a certificate mail attaches the PDF and moves the certificate,
+// a standalone mail sends the stored subject and body only and
+// never touches a certificate. On success: the certificate becomes
+// SENT, emailedAt is set, and its mail row becomes SENT. On
+// failure: the certificate becomes FAILED with the error saved, its
+// mail row becomes FAILED, and the worker keeps going with the
+// next mail. One failure never blocks the rest of the batch. Mails
+// that are already SENT or FAILED are never retried by this route;
+// use the admin Retry button for a failed certificate, which
+// queues it again.
 // The scheduler should call this route every 5 minutes, with the
 // x-cron-secret header, after the site is deployed. Locally, it can
 // be called by hand with the same header for testing.
+//
+// Risks review: stale SENDING reclaim. A run that crashes or times
+// out mid-batch leaves its claimed rows SENDING forever, and the
+// admin Retry button only works on FAILED certificates, so a stuck
+// row's certificate could never be retried. Each run therefore
+// starts by putting SENDING rows older than 30 minutes back to
+// QUEUED. 30 minutes is far longer than any batch of 20 mails
+// should take, so a live run is never reclaimed mid-send; a row
+// reclaimed this way is simply picked up and sent by this run or
+// the next one, and the count is reported as `reclaimed`.
 //
 // M1: this worker claims its batch before sending. Two overlapping
 // runs (a 5-minute schedule plus a slow batch, or a manual
@@ -35,8 +49,18 @@ import { checkCronSecret } from "@/lib/cron";
 // can resurrect it to SENT or overwrite the void.
 export async function GET(request) {
   if (!checkCronSecret(request)) return fail("FORBIDDEN", 403);
+  // Risks review: reclaim stale SENDING rows first. A row claimed
+  // more than 30 minutes ago belongs to a run that crashed or timed
+  // out; putting it back to QUEUED lets this run (or the next one)
+  // pick it up again instead of leaving it stuck forever.
+  const staleBefore = new Date(Date.now() - 30 * 60 * 1000);
+  const reclaimedRows = await prisma.mailLog.updateMany({
+    where: { status: "SENDING", updatedAt: { lt: staleBefore } },
+    data: { status: "QUEUED" },
+  });
+  const reclaimed = reclaimedRows.count;
   const queuedIds = await prisma.mailLog.findMany({
-    where: { type: "CERTIFICATE", status: "QUEUED" },
+    where: { type: { in: ["CERTIFICATE", "STANDALONE"] }, status: "QUEUED" },
     orderBy: { createdAt: "asc" },
     take: 20,
     select: { id: true },
@@ -64,6 +88,43 @@ export async function GET(request) {
   let sent = 0;
   let failed = 0;
   for (const row of queued) {
+    // Risks review: standalone mail (queued by /api/admin/mail).
+    // It has no certificate, so every certificate check below is
+    // skipped: send the stored subject and body, then mark the row
+    // SENT or FAILED. The HTML is regenerated from the stored text
+    // body with the same helper the route used to use inline. The
+    // status update is conditional on the row still being SENDING,
+    // the same guard as the certificate path.
+    if (row.type === "STANDALONE") {
+      if (!row.body) {
+        await prisma.mailLog.updateMany({
+          where: { id: row.id, status: "SENDING" },
+          data: { status: "FAILED", error: "NO_BODY" },
+        });
+        failed += 1;
+        continue;
+      }
+      const standaloneResult = await sendMail({
+        to: row.toEmail,
+        subject: row.subject,
+        text: row.body,
+        html: toHtml(row.body),
+      });
+      if (standaloneResult.sent) {
+        await prisma.mailLog.updateMany({
+          where: { id: row.id, status: "SENDING" },
+          data: { status: "SENT", error: null, sentAt: new Date() },
+        });
+        sent += 1;
+      } else {
+        await prisma.mailLog.updateMany({
+          where: { id: row.id, status: "SENDING" },
+          data: { status: "FAILED", error: standaloneResult.error || "MAIL_FAILED" },
+        });
+        failed += 1;
+      }
+      continue;
+    }
     if (!row.certificateId) {
       await prisma.mailLog.updateMany({
         where: { id: row.id, status: "SENDING" },
@@ -171,5 +232,5 @@ export async function GET(request) {
       failed += 1;
     }
   }
-  return ok({ processed: queued.length, sent, failed });
+  return ok({ processed: queued.length, sent, failed, reclaimed });
 }

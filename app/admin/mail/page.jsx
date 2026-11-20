@@ -183,13 +183,14 @@ export default function MailPage() {
         showToast("Could not send the mail. Please try again.", "error");
         return;
       }
-      const { sent, failed, total } = json.data;
+      const { queued, total, failedEmails } = json.data;
+      const failedCount = Array.isArray(failedEmails) ? failedEmails.length : 0;
       showToast(
-        `Done: ${sent} sent, ${failed} failed, out of ${total}.` +
-          (failed > 0
-            ? " The failed addresses are logged, and mail may have failed because the mail setup is not working yet — check the mail settings."
+        `Queued: ${queued} of ${total} address${total === 1 ? "" : "es"}. Mails go out over the next few minutes via the queue.` +
+          (failedCount > 0
+            ? ` ${failedCount} could not be queued — try those addresses again.`
             : ""),
-        failed > 0 ? "info" : "success"
+        failedCount > 0 ? "info" : "success"
       );
     } catch {
       showToast("Could not send the mail. Please try again.", "error");
@@ -206,7 +207,8 @@ export default function MailPage() {
         any event: type the addresses, the subject, and the body here,
         or load the addresses from an Excel or CSV file of registered
         students. Each student gets their own mail, so no one sees the
-        other addresses.
+        other addresses. Mails are queued and go out over the next few
+        minutes, so a long list is never held up by one slow send.
       </p>
       <form className="team-admin-form" onSubmit={send}>
         <label>
