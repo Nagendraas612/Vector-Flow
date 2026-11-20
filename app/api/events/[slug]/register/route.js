@@ -1,11 +1,24 @@
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession, isCollegeEmail } from "@/lib/auth";
 import { ok, fail } from "@/lib/json";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { isCloudinaryUrl } from "@/lib/upload";
 import { buildRegistrationMail, sendMail } from "@/lib/mail";
 
 export async function POST(request, { params }) {
   const session = await getSession();
   if (!session) return fail("NOT_SIGNED_IN", 401);
+  // Risks review: rate limiting, 10/min/IP, checked after auth so a
+  // signed-out caller gets 401, not 429. fail() cannot set headers,
+  // so the 429 is built here with the Retry-After header.
+  const limit = checkRateLimit(request, "register", 10, 60);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "RATE_LIMITED" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
+  }
   const event = await prisma.event.findUnique({ where: { slug: params.slug } });
   if (!event) return fail("EVENT_NOT_FOUND", 404);
   if (event.status !== "PUBLISHED") return fail("REGISTRATION_CLOSED", 400);
@@ -35,17 +48,40 @@ export async function POST(request, { params }) {
   if (!isCollegeEmail(email)) return fail("NOT_COLLEGE_EMAIL", 400);
   const typedEmail = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   if (typedEmail && typedEmail !== email) return fail("NOT_COLLEGE_EMAIL", 400);
-  const name = String(body.name).trim() || dbUser.name;
-  const usn = String(body.usn).trim();
-  if (!usn) return fail("INVALID_FILE", 400);
+  // Risks review: name cap. A name over 100 chars is rejected, not
+  // silently truncated, so the student sees the problem and fixes it.
+  const typedName = String(body.name).trim();
+  if (typedName.length > 100) return fail("INVALID_NAME", 400);
+  const name = typedName || dbUser.name;
+  // Risks review: USN format. A VVCE USN is a 2-letter prefix (VV or
+  // TV) + 2-digit year (24, or 25 for lateral entry in the same
+  // batch) + 2-letter branch + 3-digit number, e.g. VV24CI113. It is
+  // normalized to uppercase here so the same value is stored in the
+  // registration row and the profile save below.
+  const usn = String(body.usn).trim().toUpperCase();
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{3}$/.test(usn)) return fail("INVALID_USN", 400);
   const isPaid = event.feeType === "PAID";
   if (isPaid && !body.paymentScreenshotUrl) return fail("PAYMENT_REQUIRED", 400);
   if (body.paymentScreenshotUrl) {
     const u = String(body.paymentScreenshotUrl);
-    if (!u.startsWith("http://") && !u.startsWith("https://")) return fail("INVALID_FILE", 400);
-    if (u.length > 2000) return fail("INVALID_FILE", 400);
+    // Risks review: screenshot URL pinned to Cloudinary. Any http(s)
+    // URL used to be accepted, so a screenshot hosted elsewhere (or
+    // a non-image link) was stored and could never be shown; the
+    // upload flow already returns a Cloudinary URL, so anything else
+    // is refused here.
+    if (!isCloudinaryUrl(u)) return fail("INVALID_SCREENSHOT", 400);
+    if (u.length > 2000) return fail("INVALID_SCREENSHOT", 400);
   }
-  const semester = body.semester ? Number(body.semester) : null;
+  // Risks review: semester. An invalid semester used to be silently
+  // dropped to null in both places below; now it is rejected, so the
+  // student fixes it instead of registering with no semester stored.
+  // Absent stays null, as before.
+  let semester = null;
+  if (body.semester !== undefined && body.semester !== null && body.semester !== "") {
+    const n = Number(body.semester);
+    if (!Number.isInteger(n) || n < 1 || n > 12) return fail("INVALID_SEMESTER", 400);
+    semester = n;
+  }
   // M5: a CANCELLED row does not block a fresh registration. The
   // unique [eventId, userId] guard would otherwise throw P2002 on a
   // student who cancelled and wants to register again. So a cancelled
@@ -66,7 +102,7 @@ export async function POST(request, { params }) {
       usn,
       email,
       branch: body.branch ? String(body.branch).trim().slice(0, 100) : null,
-      semester: Number.isInteger(semester) && semester >= 1 && semester <= 12 ? semester : null,
+      semester,
       phone: body.phone ? String(body.phone).trim().slice(0, 20) : null,
       paymentStatus: isPaid ? "PENDING_REVIEW" : "NOT_REQUIRED",
       paymentScreenshotUrl: body.paymentScreenshotUrl || null,
@@ -107,7 +143,7 @@ export async function POST(request, { params }) {
     try {
       const profile = {};
       if (body.branch) profile.branch = String(body.branch).trim().slice(0, 100);
-      if (Number.isInteger(semester) && semester >= 1 && semester <= 12) profile.semester = semester;
+      if (semester !== null) profile.semester = semester;
       if (body.phone) profile.phone = String(body.phone).trim().slice(0, 20);
       const usnOwner = await prisma.user.findUnique({ where: { usn } });
       if (!usnOwner || usnOwner.id === session.userId) profile.usn = usn;

@@ -1,37 +1,36 @@
 // Standalone Mail section: admin-only, not tied to any event or
-// slug. The admin supplies To, Subject, and Body. One mail is sent
-// per recipient, so no recipient sees the others, and one MailLog
-// row (type STANDALONE) is written per recipient. This route never
-// touches the announcement, registration, payment, reminder, or
-// certificate mails or their audiences.
+// slug. The admin supplies To, Subject, and Body. One QUEUED
+// MailLog row (type STANDALONE) is written per recipient, and the
+// mail-queue worker sends them 20 at a time, oldest first, so a
+// long list never has to finish inside one request and cannot hit
+// the Vercel function timeout. One mail is sent per recipient, so
+// no recipient sees the others. This route never sends mail
+// itself and never touches the announcement, registration, payment,
+// reminder, or certificate mails or their audiences.
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { ok, fail } from "@/lib/json";
-import { sendMail } from "@/lib/mail";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_RECIPIENTS = 200;
 const MAX_SUBJECT = 200;
 const MAX_BODY = 20000;
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function toHtml(text) {
-  return text
-    .split("\n")
-    .map((line) => `<p>${escapeHtml(line)}</p>`)
-    .join("");
-}
-
 export async function POST(request) {
   const auth = await requireAdmin();
   if (auth.error) return auth.error;
+  // Risks review: rate limiting, 5/min/IP, checked after the admin
+  // check so a non-admin gets the auth error, not 429. fail() cannot
+  // set headers, so the 429 is built here with the Retry-After header.
+  const limit = checkRateLimit(request, "admin-mail", 5, 60);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "RATE_LIMITED" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
+  }
 
   let payload;
   try {
@@ -58,18 +57,14 @@ export async function POST(request) {
   if (!body) return fail("BODY_REQUIRED", 400);
   if (body.length > MAX_BODY) return fail("BODY_TOO_LONG", 400);
 
-  let sent = 0;
+  // Risks review: queue, do not send. Sending up to 200 mails one
+  // after another inside this POST risked the Vercel function
+  // timeout, so each recipient gets one QUEUED row (subject and
+  // body stored) and the cron worker sends them in batches of 20.
+  // A row that fails to save is reported back; the rest still queue.
+  let queued = 0;
   const failedEmails = [];
-  const logErrors = [];
   for (const toEmail of recipients) {
-    const result = await sendMail({
-      to: toEmail,
-      subject,
-      text: body,
-      html: toHtml(body),
-    });
-    if (result.sent) sent += 1;
-    else failedEmails.push(toEmail);
     try {
       await prisma.mailLog.create({
         data: {
@@ -77,23 +72,20 @@ export async function POST(request) {
           toEmail,
           type: "STANDALONE",
           subject,
-          status: result.sent ? "SENT" : "FAILED",
-          error: result.sent ? null : result.error,
-          sentAt: result.sent ? new Date() : null,
+          body,
+          status: "QUEUED",
         },
       });
+      queued += 1;
     } catch {
-      // The mail result stands: a log-write failure must not
-      // reclassify a mail that was actually sent (or failed).
-      logErrors.push(toEmail);
+      failedEmails.push(toEmail);
     }
   }
 
   return ok({
-    sent,
-    failed: recipients.length - sent,
+    queued,
+    failed: recipients.length - queued,
     total: recipients.length,
     failedEmails,
-    logErrors,
   });
 }

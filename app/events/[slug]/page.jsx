@@ -14,6 +14,13 @@ const HUMAN = {
   REGISTRATION_CLOSED: "Registration is closed for this event.",
   ALREADY_REGISTERED: "You are already registered for this event.",
   PAYMENT_REQUIRED: "A paid event needs a payment screenshot.",
+  // Risks review: the new validation errors get their own messages,
+  // so the student sees exactly what to fix instead of the generic
+  // "check the form" fallback.
+  INVALID_USN: "Please enter a valid USN, e.g. VV24CI113.",
+  INVALID_NAME: "Please enter a name under 100 characters.",
+  INVALID_SEMESTER: "Please enter a semester between 1 and 12.",
+  INVALID_SCREENSHOT: "Please upload your payment screenshot again.",
   INVALID_FILE: "Please check the form and try again.",
 };
 
@@ -335,7 +342,7 @@ export default function EventDetail({ params }) {
                 </label>
                 <label>
                   USN
-                  <input value={form.usn} onChange={(e) => set("usn", e.target.value)} required autoComplete="off" />
+                  <input value={form.usn} onChange={(e) => set("usn", e.target.value)} required autoComplete="off" pattern="[A-Za-z]{2}[0-9]{2}[A-Za-z]{2}[0-9]{3}" title="USN format: 2 letters, 2 digits, 2 letters, 3 digits, e.g. VV24CI113" />
                 </label>
                 <label className="event-registration-form__wide">
                   College email

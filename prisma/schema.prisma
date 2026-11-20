@@ -187,10 +187,20 @@ model MailLog {
   toEmail       String   @map("to_email")
   type          MailType
   subject       String?
+  // Risks review: the queued body of a standalone mail, text only.
+  // The worker regenerates the HTML from it with the shared toHtml
+  // helper at send time, so only one copy of the text is stored.
+  body          String?
   status        MailStatus @default(QUEUED)
   error         String?
   sentAt        DateTime? @map("sent_at")
   createdAt     DateTime @default(now()) @map("created_at")
+  // Risks review: stale SENDING reclaim. The worker claims rows to
+  // SENDING before sending; if a run crashes mid-batch the row
+  // stays SENDING forever. updatedAt moves on every write, so a
+  // SENDING row older than 30 minutes is a stale claim the next
+  // run can safely put back to QUEUED.
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
   @@index([status])
   @@map("mail_logs")
 }

@@ -1,10 +1,22 @@
+import { NextResponse } from "next/server";
 import { getSession, requireAdmin } from "@/lib/auth";
 import { cloudinarySignature } from "@/lib/upload";
 import { ok, fail } from "@/lib/json";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export async function POST(request) {
   const session = await getSession();
   if (!session) return fail("NOT_SIGNED_IN", 401);
+  // Risks review: rate limiting, 30/min/IP, checked after auth so a
+  // signed-out caller gets 401, not 429. fail() cannot set headers,
+  // so the 429 is built here with the Retry-After header.
+  const limit = checkRateLimit(request, "upload-signature", 30, 60);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "RATE_LIMITED" },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
+  }
   // m3 (minors): a malformed or empty JSON body used to throw here
   // and return a Next 500. An empty object fails the folder check
   // below with a 400 instead.
