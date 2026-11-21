@@ -80,12 +80,14 @@ export default function FileUpload({ folder, onUploaded, label, accept }) {
       form.append("timestamp", String(sig.data.timestamp));
       form.append("signature", sig.data.signature);
       form.append("folder", sig.data.folder);
-      // m3: these two were part of the signed parameters, so they
-      // must be sent with the same values or Cloudinary refuses
-      // the upload. They cap the file to the type and size the
-      // server allowed for this folder.
+      // m3: allowed_formats was part of the signed parameters, so it
+      // must be sent with the same value or Cloudinary refuses
+      // the upload. It caps the file to the type the server
+      // allowed for this folder. max_file_size is NOT sent: it is
+      // not a Cloudinary Upload API parameter, and signing +
+      // sending it broke every upload with a 401 (Nov 2026). Size
+      // is enforced by the MAX_BYTES check above.
       form.append("allowed_formats", sig.data.allowedFormats);
-      form.append("max_file_size", String(sig.data.maxFileSize));
       const up = await fetch(
         `https://api.cloudinary.com/v1_1/${sig.data.cloudName}/image/upload`,
         { method: "POST", body: form }
