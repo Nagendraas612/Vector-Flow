@@ -1,6 +1,5 @@
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import SiteChrome from "@/components/SiteChrome";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { getSessionUser } from "@/lib/auth";
 
@@ -33,11 +32,7 @@ export default async function RootLayout({ children }) {
         <a className="skip-link" href="#main-content">
           Skip to content
         </a>
-        <Header initialUser={initialUser} />
-        <main id="main-content" tabIndex={-1}>
-          {children}
-        </main>
-        <Footer />
+        <SiteChrome initialUser={initialUser}>{children}</SiteChrome>
       </body>
     </html>
   );
