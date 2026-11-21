@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import BrandLogo from "@/components/BrandLogo";
-import { IconArrowRight } from "@/components/icons";
+import { IconArrowLeft, IconArrowRight } from "@/components/icons";
 
 function SignInContent() {
   const router = useRouter();
@@ -31,6 +31,9 @@ function SignInContent() {
         : "";
   return (
     <div className="signin-page">
+      <Link className="signin-page__back" href="/">
+        <IconArrowLeft /> Back to home
+      </Link>
       <div className="signin-brand">
         <BrandLogo className="signin-brand__logo" priority />
       </div>

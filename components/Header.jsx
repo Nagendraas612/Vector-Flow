@@ -27,6 +27,7 @@ export default function Header({ initialUser = null }) {
   const [user, setUser] = useState(initialUser);
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const firstFetchSkipped = useRef(true);
   const accountRef = useRef(null);
@@ -64,6 +65,18 @@ export default function Header({ initialUser = null }) {
     setMenuOpen(false);
     setAccountOpen(false);
   }, [pathname]);
+
+  // Vercel pattern: the header is transparent at the top of the
+  // page and gains its blur + border once the user scrolls. The
+  // threshold is 8px so a tiny nudge does not flicker the style.
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 8);
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Handle escape key and body scroll lock when mobile overlay is active
   useEffect(() => {
@@ -124,7 +137,7 @@ export default function Header({ initialUser = null }) {
   }
 
   return (
-    <header className="site-header">
+    <header className={`site-header${scrolled ? " is-scrolled" : ""}`}>
       <div className="site-header__inner">
         <Link className="site-brand" href="/" aria-label="Vector Flow home" onClick={closeMenu}>
           <BrandLogo className="site-brand__logo" priority />

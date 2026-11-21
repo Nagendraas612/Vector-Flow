@@ -179,6 +179,15 @@ export default function EventDetail({ params }) {
     event.startAt &&
     event.endAt &&
     new Date(event.startAt).toDateString() !== new Date(event.endAt).toDateString();
+  // LF2: build the time line from whole chunks, so the separators
+  // always have exactly one space around them — three separate JSX
+  // expressions made the spacing depend on how JSX collapses the
+  // whitespace between them, and the line could wrap mid-phrase.
+  const timeRange = eventTime
+    ? eventEndTime
+      ? `${eventTime} – ${eventEndTime}`
+      : eventTime
+    : "Time to be announced";
   const feeLabel = event.feeType === "PAID" ? `₹${event.feeAmount}` : "Free";
   const registrationHref = event.registrationMode === "EXTERNAL"
     ? event.externalRegistrationUrl
@@ -221,9 +230,10 @@ export default function EventDetail({ params }) {
               <span>
                 <strong>{eventDate || "Date to be announced"}</strong>
                 <span>
-                  {eventTime || "Time to be announced"}
-                  {eventEndTime ? ` – ${eventEndTime}` : ""}
-                  {endsOnDifferentDay && eventEndDate ? ` · ends ${eventEndDate}` : ""}
+                  <span className="event-detail-fact__nowrap">{timeRange}</span>
+                  {endsOnDifferentDay && eventEndDate ? (
+                    <span className="event-detail-fact__nowrap"> · ends {eventEndDate}</span>
+                  ) : null}
                 </span>
               </span>
             </div>
