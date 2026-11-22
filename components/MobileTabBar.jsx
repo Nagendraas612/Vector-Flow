@@ -15,10 +15,11 @@ import {
 import { formatDisplayName, initialsFor } from "@/lib/names";
 
 // Mobile navigation: a fixed bottom tab bar (YouTube-style),
-// replacing the old hamburger + drawer. Four tabs: Home, Gallery,
-// Team, Profile. Profile opens a sheet floating above the bar with
-// the account block, Participation, Admin (admins only) and Sign
-// out; a signed-out visitor gets a Sign in button there instead.
+// replacing the old hamburger + drawer. Four tabs: Home,
+// Participation, Team, Profile. Profile opens a sheet floating
+// above the bar with the account block, Gallery, Admin (admins
+// only) and Sign out; a signed-out visitor gets a Sign in button
+// there instead.
 // The whole component is display:none above the 860px breakpoint
 // (see globals.css), so desktop output is untouched: desktop keeps
 // its top nav and avatar dropdown, and this bar never renders
@@ -30,12 +31,12 @@ export default function MobileTabBar({ user = null, onSignOut }) {
   const profileButtonRef = useRef(null);
 
   const isHome = pathname === "/";
-  const isGallery = pathname.startsWith("/gallery");
+  const isParticipation = pathname.startsWith("/participation");
   const isTeam = pathname.startsWith("/team");
-  // Participation and Admin live behind Profile, so the Profile
+  // Gallery and Admin live behind Profile, so the Profile
   // tab reads as active on those pages too.
   const isProfilePage =
-    pathname.startsWith("/participation") || pathname.startsWith("/admin");
+    pathname.startsWith("/gallery") || pathname.startsWith("/admin");
   const isProfileActive = sheetOpen || isProfilePage;
 
   // Close the sheet on navigation, same as the desktop account menu.
@@ -86,8 +87,8 @@ export default function MobileTabBar({ user = null, onSignOut }) {
                   <span>{user.email}</span>
                 </div>
               </div>
-              <Link className="mobile-profile-sheet__row" href="/participation">
-                <IconClipboardList /> Participation
+              <Link className="mobile-profile-sheet__row" href="/gallery">
+                <IconImage /> Gallery
               </Link>
               {user.role === "ADMIN" && (
                 <Link className="mobile-profile-sheet__row" href="/admin">
@@ -120,12 +121,12 @@ export default function MobileTabBar({ user = null, onSignOut }) {
           <span className="mobile-tabbar__dot" aria-hidden="true" />
         </Link>
         <Link
-          className={tabClass(isGallery)}
-          href="/gallery"
-          aria-current={isGallery ? "page" : undefined}
+          className={tabClass(isParticipation)}
+          href="/participation"
+          aria-current={isParticipation ? "page" : undefined}
         >
-          <IconImage />
-          <span className="mobile-tabbar__label">Gallery</span>
+          <IconClipboardList />
+          <span className="mobile-tabbar__label">Participation</span>
           <span className="mobile-tabbar__dot" aria-hidden="true" />
         </Link>
         <Link
